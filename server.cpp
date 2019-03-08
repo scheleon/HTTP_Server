@@ -11,29 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <boost/lexical_cast.hpp>
-/*
-string create_html_output_for_binary(const string &full_path)
-{
-    std::vector<char> buffer;
 
-    //... other code here
-    const char* file_name = full_path.c_str();
-    FILE* file_stream = fopen(file_name, "rb");
-    string file_str;
-    size_t file_size;
-    if(file_stream != nullptr)
-    {
-        fseek(file_stream, 0, SEEK_END);
-        long file_length = ftell(file_stream);
-        rewind(file_stream);
-
-        buffer.resize(file_length);
-
-        file_size = fread(&buffer[0], 1, file_length, file_stream);
-    }
-
-    // .... other code here
-}*/
 using namespace std;
 using boost::lexical_cast;
 
