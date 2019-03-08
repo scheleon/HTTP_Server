@@ -39,45 +39,92 @@ using boost::lexical_cast;
 
 string output(const string full_path,long *file_length)
 {
-//ifstream input1(full_path); //put your program together with this file in the same folder.
-*file_length=0;
-	ifstream input(full_path);	
+	*file_length=0;
+	ifstream input(full_path);
 	if(input.is_open()){
 	    string str;
 	    while(!input.eof()){
-          string number;
-          getline(input,number); //read number
-           //cout<<number<<endl; //print it out
-          str = lexical_cast<string>(str)+lexical_cast<string>("\n")+lexical_cast<string>(number);
+          string data;
+          getline(input,data);
+          str = lexical_cast<string>(str)+lexical_cast<string>("\n")+lexical_cast<string>(data);
     }
-	//cout<<str;
 	*file_length=str.size();
-	input1.close();
-	//cout<<str.size()<<"########";
-   return str;}	
-    
-return "<html><body>james_bond</body></html>";
+	input.close();
+  return str;}
+	string str="<html>\n<body>\njames_bond\n</body>\n</html>";
+	*file_length=str.size();
+return str;
 }
-//void dostuff(int,string*); /* function prototype */
-
 void error(const char *msg)
 {
     perror(msg);
     exit(1);
 }
-void dostuff (int sock,string str)
+void send_data (int sock,string str)
+{	 int n;
+	 n = write(sock,str.c_str(),str.size());
+   if (n < 0) error("ERROR writing to socket");
+}
+string read_data (int sock)
 {
    int n;
    char buffer[30000];
    bzero(buffer,30000);
    n = read(sock,buffer,29999);
-   if (n < 0) error("ERROR reading from socket");
-   printf("Here is the message: %s\n",buffer);
-   //const char *buffer=str.c_str();
-   n = write(sock,str.c_str(),str.size());
-   if (n < 0) error("ERROR writing to socket");
+	 string request;
+	 request=buffer;
+	 if (n < 0) error("ERROR reading from socket");
+	 cout<<request;
+	 bzero(buffer,30000);
+	 string req_type=request.substr(0,3);
+	 //cout<<req_type<<"*****************\n";
+	 if(req_type=="GET")
+	 {
+		  int i;
+		  for(i=4;i<request.size();i++)
+		  if(request[i]==' ')
+		  break;
+			string file=request.substr(4,i-4);
+			if(file=="/")
+			{file="index.html";
+			return file;}
+			file=request.substr(5,i-5);
+			//cout<<file<<"**************\n";
+			return file;
+	 }
+	 return 0;
 }
-
+void dostuff (int sock)
+{	int start;
+	string file=read_data(sock);
+	if(file[0]=='0')
+	error("Wrong_request");
+	long file_length=0;
+	for(start=0;start<file.size();start++)
+	if(file[start]=='.')
+	break;
+	string extension=file.substr(start+1,file.size()-start-1);
+	//cout<<extension<<"************\n";
+	string str3,str2=output(file,&file_length),content_type="text/html";
+	//cout<<str2<<endl;
+	string end_line="\n\n";
+	if(extension=="jpg")
+	{content_type="image/jpg";
+   end_line="\n";}
+	else if(extension=="png")
+	{content_type="image/png";
+	 end_line="\n";}
+	else if(extension=="jpeg")
+	{content_type="image/jpeg";
+	 end_line="\n";}
+	 else if(extension=="css")
+	 {content_type="stylesheet";}
+	 else if(extension=="js")
+	 {content_type="script";}
+	str3 =lexical_cast<string>("HTTP/1.1 200 OK\nserver: linuxbox\nContent-Type: ")+lexical_cast<string>(content_type);
+	str3=lexical_cast<string>(str3)+lexical_cast<string>("\nContent-Length: ")+lexical_cast<string>(file_length)+lexical_cast<string>(end_line)+lexical_cast<string>(str2);
+	send_data(sock,str3);
+}
 int main(int argc, char *argv[])
 {
      int sockfd, newsockfd, portno, pid;
@@ -110,16 +157,11 @@ int main(int argc, char *argv[])
              error("ERROR on fork");
          if (pid == 0)  {
              close(sockfd);
-            long file_length=0;
-		string str3,str2=output("index.html",&file_length);
-		str3 =lexical_cast<string>("HTTP/1.1 200 OK\nDate: Thu, 7 Mar 2019 12:00:04 GMT\nserver: linuxbox\nContent-Type: text/html;charset=UTF-8\nContent-Length: "+lexical_cast<string>(file_length)+lexical_cast<string>("\n\n")+lexical_cast<string>(str2);
-		cout<<str3;            
-            dostuff(newsockfd,str3);
-		
-             exit(0);
+         dostuff(newsockfd);
+		     exit(0);
          }
          else close(newsockfd);
-     } /* end of while */
+     }
      close(sockfd);
-     return 0; /* we never get here */
+     return 0;
 }
